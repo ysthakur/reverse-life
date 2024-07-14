@@ -6,13 +6,21 @@ board = [
     [1],
 ]
 
+# Add a ring of dead cells
+padding = 2  # cells thick
+board = [
+    *[[0] * (len(board[0]) + 2 * padding)] * padding,
+    *[[0] * padding + row + [0] * padding for row in board],
+    *[[0] * (len(board[0]) + 2 * padding)] * padding,
+]
+print(board)
+
 curr_vars = [
     [Bool(f"c[{i}][{j}]") for j in range(len(board[0]))] for i in range(len(board))
 ]
 
 prev_vars = [
-    [Bool(f"p[{i}][{j}]") for j in range(len(board[0]) + 2)]
-    for i in range(len(board) + 2)
+    [Bool(f"p[{i}][{j}]") for j in range(len(board[0]))] for i in range(len(board))
 ]
 
 
@@ -37,30 +45,37 @@ def constrain_bools(bools, min, max):
         ]
 
     constraints = helper(bools, min, max, [[]])
+    for constraint in constraints:
+        print(constraint)
     constraint = Or(*[And(bools) for bools in constraints])
-    print(constraint)
     return constraint
 
 
-def constraints_at(r, c):
+def constraints_at(r: int, c: int):
     """Get constraints for curr_vars[r][c]"""
-    prev = prev_vars[r + 1][c + 1]
 
-    # Neighbors of prev_vars[r + 1][c + 1]
-    neighbors = [
-        prev_vars[r + 1][c],
-        prev_vars[r + 1][c + 2],
-        *prev_vars[r][c : c + 3],
-        *prev_vars[r + 2][c : c + 3],
-    ]
+    # Neighbors of prev_vars[r][c]
+    neighbors = []
+    if c > 0:
+        neighbors.append(prev_vars[r][c - 1])
+    if c + 1 < len(board[0]):
+        neighbors.append(prev_vars[r][c + 1])
+    cmin = max(c - 1, 0)
+    cmax = min(c + 2, len(board[0]))
+    if r > 0:
+        neighbors.extend(prev_vars[r - 1][cmin:cmax])
+    if r + 1 < len(board):
+        neighbors.extend(prev_vars[r + 1][cmin:cmax])
     print(neighbors)
+    print("--- end neighbors ---")
 
     exactly_two = constrain_bools(neighbors, 2, 2)
+    print("---")
     exactly_three = constrain_bools(neighbors, 3, 3)
 
     print("e")
 
-    alive = Or(And(prev, exactly_two), exactly_three)
+    alive = Or(And(prev_vars[r][c], exactly_two), exactly_three)
 
     if board[r][c]:
         return alive
