@@ -88,6 +88,13 @@ constraints = [
 ]
 s = Solver()
 s.add(*constraints)
+
+# Make sure that the previous state had no zeroes at the border (to ensure that the new state doesn't have ones off the board)
+s.add(*[Not(prev_vars[r][0]) for r in range(len(prev_vars))])
+s.add(*[Not(prev_vars[r][-1]) for r in range(len(prev_vars))])
+s.add(*[Not(cell) for cell in prev_vars[0]])
+s.add(*[Not(cell) for cell in prev_vars[-1]])
+
 s.check()
 model = s.model()
 print(
